@@ -87,7 +87,22 @@ When changing curation:
 
 `cannes`, `berlin`, `venice`, `oscars`, `sundance`, `toronto`, `locarno`, `iffr`, `biff`, `tokyo`, `golden-horse`, `bafta`, and `golden-globes`.
 
-Award updates are optimistic-concurrency writes and are reflected into movie archive snapshots. The unified administrator API is `/api/admin/awards`; do not restore old per-award mutation routes. Official SVG assets are in `server/public/award-logos/`, with provenance notes in `SOURCES.md`.
+The version-controlled seed source is `server/public/awards-seed/awards-<event>.json`. The runtime data file is `DATA_DIRECTORY/awards-<event>.json`; it is production state and may contain administrator edits. On first read, a missing or pristine placeholder table is initialized from the matching seed. A pristine legacy English table at `revision: 0` is upgraded from localized seed data, while any administrator-edited table is preserved. If a seed file is absent, the server creates an explicitly empty table rather than silently inventing coverage. Never copy a production runtime table into the repository.
+
+`server/public/awards-seed/award-localization.json` is the canonical `zh-Hans` mapping for event and award labels, along with source references. Seed category labels must exist in that manifest. `server/tests/award-data.test.ts` enforces the 13 table counts, edition/year mapping, Simplified Chinese labels, duplicate constraints, and canonical movie matches. `server/scripts/audit-award-seed.mjs` rechecks rows against IMDb GraphQL and accepts optional award IDs:
+
+```bash
+npm run audit:awards
+npm run audit:awards -- oscars cannes
+```
+
+Rows contain `id`, `year`, `eventName`, `edition`, `category`, nullable exact-match `imdbID`, `movieTitle`, `recipients`, `sourceURL`, and `notes`. Rows without a unique film IMDb ID remain records but cannot match movie archives. Validation rejects malformed IMDb IDs, empty labels, duplicate IDs or award identities, unsafe source URLs, oversized tables, and invalid edition values.
+
+The unified administrator API is `GET/PUT /api/admin/awards`; do not restore old per-award mutation routes. `PUT` accepts `{ event, table: { revision, coverageNotes, rows } }`, requires Basic authentication and same-origin validation, is rate limited, and writes atomically with optimistic `revision` concurrency. A successful write refreshes award snapshots for existing movie archives affected by either the old or new IMDb rows.
+
+New movie archives read all 13 tables by exact IMDb ID before the object is written and persist `{ checkedAt, tables, entries }` under `archive.awards`. Public movie details convert that snapshot to deduplicated `MovieAward` values containing `awardId`, `eventName`, `edition`, and the localized display `award`. A missing `awards` field on an old archive is compatible as empty. Existing snapshots are not bulk-backfilled on deployment; table saves refresh affected archives, and an archive containing the uninitialized placeholder coverage is refreshed on its next movie read.
+
+Official SVG assets are in `server/public/award-logos/<event>.svg`, with provenance notes in `SOURCES.md`. They are static public assets served under `/award-logos/`; do not replace them with hand-drawn approximations.
 
 ## Admin And Service Security
 

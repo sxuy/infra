@@ -15,6 +15,7 @@ Read [the server architecture reference](references/architecture.md) before modi
 - Treat `DATA_DIRECTORY` as persistent production state. Do not reset, delete, or repurpose it. Keep durable movie archives distinct from the regenerable upstream image cache.
 - Do not expose or commit service secrets, signing material, certificate files, `TMDB_READ_TOKEN`, `ADMIN_PASSWORD`, or `PASS_LINK_SECRET`.
 - Reuse the existing storage, HTTP, upstream, metadata, curation, and image helpers instead of introducing parallel persistence, validation, or fetch paths.
+- Keep award seed files in `server/public/awards-seed/` separate from administrator-edited runtime tables in `DATA_DIRECTORY`. Update the localization manifest and data tests with any award-label change; never copy production runtime files back into the repository.
 - Do not weaken image/path validation, identity validation, admin authentication, same-origin checks, or bounded request parsing.
 - Do not run the production deployment script or change public ingress unless the user explicitly asks. For Caddy/public routing work, also use the `aliyun-ecs-ingress` skill.
 - Read `infra/docs/SERVER_TOPOLOGY.md` before changing a production route, Docker network, or persistent volume. ForVision has no ownership of `80/443`; Caddy runs in the separate `infra` deployment.
@@ -29,3 +30,5 @@ npm test
 ```
 
 Run `npm run audit:movie-archives` when a change affects archive creation, curation, compressed media, metadata persistence, or award snapshots and the required TMDB configuration is available.
+
+Run `npm run audit:awards` when award tables, localized labels, editions, or IMDb associations change. Run it with one or more award IDs to limit the IMDb GraphQL audit to selected tables.
