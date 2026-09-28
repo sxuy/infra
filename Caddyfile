@@ -1,0 +1,7 @@
+foxii.cn {
+	import /etc/caddy/routes/foxii/*.caddy
+}
+
+forclass.foxii.cn {
+	import /etc/caddy/routes/forclass/*.caddy
+}

@@ -1,0 +1,3 @@
+handle /apple-tv-ai-subtitles/* {
+	reverse_proxy appletv-ai-subtitles-web:8080
+}
